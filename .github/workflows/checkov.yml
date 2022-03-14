@@ -62,8 +62,8 @@ jobs:
       - name: Upload output file
         uses: actions/upload-artifact@v3
         with:
-          name: checkov_results.sarif
-          path: checkov_results.sarif
+          name: results.sarif
+          path: results.sarif
 
   post-soft-failures-pr-comment:
     name: Post soft failures to a PR comment
@@ -77,12 +77,12 @@ jobs:
       - name: Download output file
         uses: actions/download-artifact@v3
         with:
-          name: checkov_results.sarif
+          name: results.sarif
 
       - name: Check whether there were any soft failures
         id: check
         run: |
-          soft_failures=$(jq '.runs[0].results != []' checkov_results.sarif)
+          soft_failures=$(jq '.runs[0].results != []' results.sarif)
           echo "::set-output name=soft_failures::${soft_failures}"
 
       - name: Checkout repo
