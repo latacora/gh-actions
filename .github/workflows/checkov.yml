@@ -1,0 +1,142 @@
+name: Checkov
+
+on:
+  workflow_call:
+    # See https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html
+    inputs:
+      baseline:
+        description: A path to a Checkov baseline file in your repo
+        type: string
+        required: false
+      directory:
+        type: string
+        required: false
+        default: ./
+      framework:
+        type: string
+        required: false
+        default: 'all'
+      quiet:
+        description: If true (the default) then Checkov will output only failed checks.
+        type: boolean
+        required: false
+        default: true
+      skip_check:
+        type: string
+        required: false
+      skip_check_suppressed:
+        description: >-
+          A list of checks to skip because they’re suppressed by default in the Checkov source. This
+          can be helpful because by default these appear in results, but sometimes (often) we don’t
+          want them to. If, for example, we want to check whether there were any soft failures.
+          (We can’t check the exit code for that because the exit code is 0 when there are no
+          failures at all and also when there are soft failures. That’s kinda the whole point of
+          soft failures.)
+        type: string
+        required: false
+        default: CKV_AWS_111,CKV_AWS_145,CKV_AWS_149
+      soft_fail:
+        type: string
+        required: false
+
+jobs:
+  checkov:
+    permissions: {}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: ${{ inputs.directory }}
+          framework: ${{ inputs.framework }}
+          quiet: ${{ inputs.quiet }}
+          skip_check: ${{ inputs.skip_check }},${{ inputs.skip_check_suppressed }}
+          soft_fail_on: ${{ inputs.soft_fail }}
+          baseline: ${{ inputs.baseline }}
+          output_format: sarif  # hard-coded because this is the only way to get GitHub annotations
+
+      - name: Upload output file
+        uses: actions/upload-artifact@v3
+        with:
+          name: checkov_results.sarif
+          path: checkov_results.sarif
+
+  post-soft-failures-pr-comment:
+    name: Post soft failures to a PR comment
+    if: github.event_name == 'pull_request'
+    needs: checkov
+    permissions:
+      issues: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download output file
+        uses: actions/download-artifact@v3
+        with:
+          name: checkov_results.sarif
+
+      - name: Check whether there were any soft failures
+        id: check
+        run: |
+          soft_failures=$(jq '.runs[0].results != []' checkov_results.sarif)
+          echo "::set-output name=soft_failures::${soft_failures}"
+
+      - name: Checkout repo
+        if: steps.check.outputs.soft_failures == 'true'
+        uses: actions/checkout@v2
+
+      - name: Re-run Checkov to get a nice Markdown table
+        if: steps.check.outputs.soft_failures == 'true'
+        id: checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: ${{ inputs.directory }}
+          framework: ${{ inputs.framework }}
+          quiet: ${{ inputs.quiet }}
+          skip_check: ${{ inputs.skip_check }},${{ inputs.skip_check_suppressed }}
+          soft_fail_on: ${{ inputs.soft_fail }}
+          baseline: ${{ inputs.baseline }}
+          output_format: github_failed_only  # GFM (Markdown) table
+
+      - name: Post the table in a comment to the PR
+        if: steps.check.outputs.soft_failures == 'true'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const results_table = `${{ env.CHECKOV_RESULTS }}`;
+            const lines = results_table.split("\n").length;
+
+            // When there are no failures, checkov’s markdown output is 6 lines long.
+            if (lines <= 6) {
+              throw new Error(`This step shouldn’t be running as output is only ${lines} lines.`);
+            }
+
+            // The blank lines inside <details> (after the opening tag and before the closing tag)
+            // are needed so that GitHub’s Markdown parser will parse the markup in results_table,
+            // which is indeed Markdown. Markup, Markdown, lol wut.
+            const body = `
+            ## 🚨🚨🚨 Checkov Failures 🚨🚨🚨
+
+            **NB:** if these failures did not cause the Checkov workflow job to fail, it’s probably\
+             because they were included in the option \`soft_fail_on\` — see\
+             \`.github/workflows/checkov.yml\`
+
+            <details>
+
+              ${results_table}
+
+              * Pusher: @${{ github.actor }}
+              * Action: \`${{ github.event_name }}\`
+              * Workflow: \`${{ github.workflow }}\`*
+
+            </details>`
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
