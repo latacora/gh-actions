@@ -16,6 +16,14 @@ on:
         type: string
         required: false
         default: 'all'
+      pr_comment_on_soft_failures:
+        description: >-
+          If true (the default) then if the workflow is triggered by a `pull_request` event *and*
+          there are *only* soft failures, then the workflow will post a comment to an open PR (if
+          any) with a table listing those soft failures.
+        type: boolean
+        required: false
+        default: true
       quiet:
         description: If true (the default) then Checkov will output only failed checks.
         type: boolean
@@ -67,7 +75,7 @@ jobs:
 
   post-soft-failures-pr-comment:
     name: Post soft failures to a PR comment
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && inputs.pr_comment_on_soft_failures
     needs: checkov
     permissions:
       contents: read
