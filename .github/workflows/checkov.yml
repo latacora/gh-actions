@@ -41,7 +41,8 @@ on:
 
 jobs:
   checkov:
-    permissions: {}
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -69,6 +70,7 @@ jobs:
     if: github.event_name == 'pull_request'
     needs: checkov
     permissions:
+      contents: read
       issues: write
     runs-on: ubuntu-latest
     steps:
