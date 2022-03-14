@@ -119,8 +119,8 @@ jobs:
             const results_table = `${{ env.CHECKOV_RESULTS }}`;
             const lines = results_table.split("\n").length;
 
-            // When there are no failures, checkov’s markdown output is 6 lines long.
-            if (lines <= 6) {
+            // When there are no failures, checkov’s markdown output is 5 lines long.
+            if (lines <= 5) {
               throw new Error(`This step shouldn’t be running as output is only ${lines} lines.`);
             }
 
