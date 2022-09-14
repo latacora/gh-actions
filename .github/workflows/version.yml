@@ -1,8 +1,11 @@
 name: Compute Version Identifier
 
 on:
-  - push
-  - workflow_call
+  push: {}
+  workflow_call:
+    outputs:
+      version_id:
+        value: ${{ jobs.compute.outputs.version_id }}
 
 env:
   # A reusable workflow has no way to access files in its own repo, as far as I can tell. So
@@ -64,7 +67,7 @@ env:
 jobs:
   compute:
     outputs:
-      version_id: ${{ steps.version.id }}
+      version_id: ${{ steps.compute.outputs.version_id }}
     permissions:
       contents: read
     runs-on: ubuntu-22.04
@@ -84,9 +87,9 @@ jobs:
           chmod +x $tmpdir/version.bb
 
       - name: Compute version ID
-        id: version
+        id: compute
         run: |
           tmpdir="${{ runner.temp }}"
           version_id=$($tmpdir/version.bb)
           echo "Computed version identifier: ${version_id}"
-          echo "::set-output name=id::${version_id}"
+          echo "::set-output name=version_id::${version_id}"
