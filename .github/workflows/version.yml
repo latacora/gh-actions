@@ -1,0 +1,28 @@
+name: Compute Version Identifier
+
+on:
+  - push
+  - workflow_call
+
+jobs:
+  compute:
+    outputs:
+      version_id: ${{ steps.version.id }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install babashka
+        uses: DeLaGuardo/setup-clojure@9.5
+        with:
+          bb: 0.9.162
+
+      - name: Compute version ID
+        id: version
+        run: |
+          version_id=$(.github/workflows/bin/version.bb)
+          echo "Computed version identifier: ${version_id}"
+          echo "::set-output name=id::${version_id}"
