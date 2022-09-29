@@ -49,7 +49,7 @@ env:
             worktree-clean? (not (or untracked-files? changed-files? staged-files?))
             version-str (format "%s-%s-%s%s"
                                 date-str
-                                branch-name
+                                (str/replace branch-name "/" "-")
                                 short-hash
                                 (if worktree-clean? "" "-UNCLEAN"))]
         (when-not worktree-clean?
