@@ -92,4 +92,4 @@ jobs:
           tmpdir="${{ runner.temp }}"
           version_id=$($tmpdir/version.bb)
           echo "Computed version identifier: ${version_id}"
-          echo "::set-output name=version_id::${version_id}"
+          echo "version_id=${version_id}" >> $GITHUB_OUTPUT
