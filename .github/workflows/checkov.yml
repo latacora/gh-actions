@@ -54,10 +54,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
 
       - name: Run Checkov
-        uses: bridgecrewio/checkov-action@master
+        uses: bridgecrewio/checkov-action@002cd2e8cc0fe0535e6f364509e091c1a9870efa # master
         with:
           directory: ${{ inputs.directory }}
           framework: ${{ inputs.framework }}
@@ -68,7 +68,7 @@ jobs:
           output_format: sarif  # hard-coded because this is the only way to get GitHub annotations
 
       - name: Upload output file
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: results.sarif
           path: results.sarif
@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download output file
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
         with:
           name: results.sarif
 
@@ -95,12 +95,12 @@ jobs:
 
       - name: Checkout repo
         if: steps.check.outputs.soft_failures == 'true'
-        uses: actions/checkout@v2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
 
       - name: Re-run Checkov to get a nice Markdown table
         if: steps.check.outputs.soft_failures == 'true'
         id: checkov
-        uses: bridgecrewio/checkov-action@master
+        uses: bridgecrewio/checkov-action@002cd2e8cc0fe0535e6f364509e091c1a9870efa # master
         with:
           directory: ${{ inputs.directory }}
           framework: ${{ inputs.framework }}
@@ -112,7 +112,7 @@ jobs:
 
       - name: Post the table in a comment to the PR
         if: steps.check.outputs.soft_failures == 'true'
-        uses: actions/github-script@v6
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

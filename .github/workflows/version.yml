@@ -73,10 +73,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
 
       - name: Install babashka
-        uses: DeLaGuardo/setup-clojure@9.5
+        uses: DeLaGuardo/setup-clojure@05cb4bfdf57855f122e75b71e45224775cdfc4a0 # 9.5
         with:
           bb: 0.9.162
 
